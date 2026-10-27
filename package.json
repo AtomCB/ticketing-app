@@ -1,0 +1,23 @@
+{
+  "name": "ticketing-app",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm codegen && pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm codegen && pnpm --recursive build",
+    "typecheck": "pnpm codegen && pnpm --recursive typecheck",
+    "codegen": "pnpm --recursive codegen",
+    "services:up": "docker compose up -d --wait",
+    "services:down": "docker compose down",
+    "services:reset": "docker compose down --volumes && docker compose up -d --wait",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:studio": "pnpm --filter api db:studio",
+    "bootstrap": "pnpm services:up && pnpm db:migrate && pnpm db:seed"
+  }
+}

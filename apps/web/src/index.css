@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+/* Design tokens. Tailwind v4 turns each of these into utilities: bg-paper, text-ink, font-display… */
+@theme {
+  --color-ink: #1b2140;
+  --color-mute: #646b88;
+  --color-paper: #eceff5;
+  --color-stock: #ffffff;
+  --color-rule: #d3d8e5;
+  --color-cobalt: #2f4be0;
+  --color-cobalt-deep: #2238b8;
+  --color-marigold: #f5b83d;
+  --color-sold: #c5cad8;
+
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /*
+   * The ticket: a white card with a perforated tear line before the stub.
+   * The notches are radial gradients in the page colour, punched out at the top and
+   * bottom of the tear line; the dashed border draws the perforation itself.
+   */
+  .ticket {
+    --notch: 0.6rem;
+    --stub-width: 6rem;
+    background:
+      radial-gradient(circle at calc(100% - var(--stub-width)) 0, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
+      radial-gradient(circle at calc(100% - var(--stub-width)) 100%, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
+      var(--color-stock);
+    border-radius: 0.75rem;
+
+    @media (width >= 40rem) {
+      --stub-width: 7.5rem;
+    }
+  }
+
+  .ticket-stub {
+    width: var(--stub-width);
+    border-left: 2px dashed var(--color-rule);
+  }
+}

@@ -1,0 +1,4 @@
+# Lets the VS Code GraphQL extension autocomplete and validate queries in apps/web.
+schema: apps/api/schema.graphql
+documents: apps/web/src/**/*.{ts,tsx}
+exclude: apps/web/src/gql/**
