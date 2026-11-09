@@ -5,12 +5,12 @@ import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { expressMiddleware } from '@as-integrations/express5';
 import cors from 'cors';
-import { sql } from 'drizzle-orm';
 import express from 'express';
-import { db, pool } from './db/client.js';
+import { pool } from './db/client.js';
 import { env } from './env.js';
 import { createContext, type GraphQLContext } from './graphql/context.js';
 import { resolvers } from './graphql/resolvers.js';
+import { checkHealth } from './health.js';
 import { redis } from './redis.js';
 
 // schema.graphql sits at the package root, one level above both src/ and dist/.
@@ -27,13 +27,10 @@ const apollo = new ApolloServer<GraphQLContext>({
 });
 await apollo.start();
 
+// Plain HTTP health check, the kind load balancers and uptime monitors call.
 app.get('/health', async (_req, res) => {
-  const [postgres, cache] = await Promise.allSettled([db.execute(sql`select 1`), redis.ping()]);
-  const status = {
-    postgres: postgres.status === 'fulfilled' ? 'ok' : 'down',
-    redis: cache.status === 'fulfilled' ? 'ok' : 'down',
-  };
-  res.status(status.postgres === 'ok' ? 200 : 503).json(status);
+  const status = await checkHealth();
+  res.status(status.postgres ? 200 : 503).json(status);
 });
 
 app.use(

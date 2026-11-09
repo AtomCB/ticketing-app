@@ -1,23 +1,54 @@
-import { Link, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from "react-router";
+import { buttonClasses } from "../components/ui/Button";
+
+// Header, main and footer share one centred column, so their edges always line up.
+const container = "mx-auto w-full max-w-[1040px] px-6";
 
 export function RootLayout() {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center px-4 pt-6 pb-2 sm:px-6">
-        <Link to="/" className="flex items-center gap-2.5 rounded-md">
+    // text-ink sets the default text colour, so text follows the theme in dark mode.
+    <div className="flex min-h-dvh flex-col bg-paper text-ink">
+      <header className={`${container} flex flex-wrap items-center justify-between gap-x-5 gap-y-2 pt-6 pb-2`}>
+        <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold">
           <TicketMark />
-          <span className="font-display text-xl font-bold tracking-tight">Houselights</span>
+          Usher
         </Link>
+
+        <nav aria-label="Main" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <NavItem to="/" end>
+            What's on
+          </NavItem>
+          {/* /my-tickets is still a TODO; until then it shows the not-found page. */}
+          <NavItem to="/my-tickets">My tickets</NavItem>
+          {/* Navigation, so a Link styled as a button. /sign-in is still TODO. */}
+          <Link to="/sign-in" className={buttonClasses("dark")}>
+            Sign in
+          </Link>
+        </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-16 sm:px-6">
+      <main className={`${container} flex-1 pt-8 pb-16`}>
         <Outlet />
       </main>
 
-      <footer className="mx-auto w-full max-w-5xl px-4 pb-8 text-sm text-mute sm:px-6">
-        A portfolio project built with React, GraphQL, Postgres and Redis.
+      <footer className={`${container} pb-10 text-sm text-mute`}>
+        A portfolio project built with React, Tailwind, GraphQL, Postgres and Redis.
       </footer>
     </div>
+  );
+}
+
+// NavLink sets aria-current="page" on the active link; the underline styles that same
+// attribute, so what sighted users see matches what screen readers announce.
+function NavItem({ to, end, children }: { to: string; end?: boolean; children: string }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className="font-semibold decoration-2 underline-offset-[6px] aria-[current=page]:underline"
+    >
+      {children}
+    </NavLink>
   );
 }
 

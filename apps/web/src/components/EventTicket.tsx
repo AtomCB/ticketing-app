@@ -1,24 +1,35 @@
-import { Link } from 'react-router';
-import type { EventsQuery } from '../gql/graphql';
-import { dateParts, formatPrice } from '../lib/format';
+import { Link } from "react-router";
+import type { EventListItem } from "../routes/EventsPage";
+import { eventDateParts } from "../lib/format";
 
-type EventNode = EventsQuery['events']['edges'][number]['node'];
+interface EventTicketProps {
+  event: EventListItem;
+}
 
-export function EventTicket({ event }: { event: EventNode }) {
-  const date = dateParts(event.startsAt);
-  const { available, total, minPriceCents } = event.availability;
+// What the stub shows under the date for each status. ON_SALE shows the lowest price
+// once the API has the availability field (milestone 8), so it's empty for now.
+// Typed by the status union, so adding a status to the schema makes this a type error
+// until it's handled here.
+const stubLabel: Record<EventListItem["status"], string | null> = {
+  SCHEDULED: "On sale soon",
+  ON_SALE: null,
+  SOLD_OUT: "Sold out",
+  CANCELLED: "Cancelled",
+};
 
-  const stubLine =
-    event.status === 'SOLD_OUT' || available === 0
-      ? 'Sold out'
-      : event.status === 'SCHEDULED'
-        ? 'On sale soon'
-        : minPriceCents !== null && minPriceCents !== undefined
-          ? `from ${formatPrice(minPriceCents)}`
-          : null;
+/**
+ * One event on the list, drawn as a printed ticket: details on the left, a tear line,
+ * and a stub with the date. The whole card links to the event page.
+ */
+export function EventTicket({ event }: EventTicketProps) {
+  const date = eventDateParts(event.startsAt);
+  const label = stubLabel[event.status];
 
   return (
-    <Link to={`/events/${event.id}`} className="ticket group flex min-h-36">
+    <Link
+      to={`/events/${event.id}`}
+      className="ticket group flex min-h-37 rounded-xl text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt"
+    >
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-5 p-5 sm:p-6">
         <div>
           <p className="text-sm text-mute">
@@ -30,30 +41,20 @@ export function EventTicket({ event }: { event: EventNode }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <span>
-            {date.weekday}, {date.time}
-          </span>
-          {event.status === 'ON_SALE' && total > 0 && <SeatsLeft available={available} total={total} />}
+          <time dateTime={event.startsAt}>{date.weekdayAndTime}</time>
+          {/* Seats-left bar goes here once the API has the availability field (milestone 8). */}
         </div>
       </div>
 
-      <div className="ticket-stub flex shrink-0 flex-col items-center justify-center px-2 py-4 text-center">
+      {/* The stub. Its width comes from --stub on .ticket (index.css), so the notches
+          line up with this dashed border at every screen size. The vertical margin of
+          one notch radius stops the dashed line where the notches begin, instead of
+          drawing it through them. */}
+      <div className="my-(--notch) flex w-(--stub) shrink-0 flex-col items-center justify-center border-l-2 border-dashed border-rule px-2 py-4 text-center">
         <span className="text-sm text-mute">{date.month}</span>
         <span className="font-display text-5xl leading-none font-extrabold">{date.day}</span>
-        {stubLine && <span className="mt-3 text-sm font-semibold">{stubLine}</span>}
+        {label && <span className="mt-3 text-sm font-semibold">{label}</span>}
       </div>
     </Link>
-  );
-}
-
-function SeatsLeft({ available, total }: { available: number; total: number }) {
-  const soldShare = (total - available) / total;
-  return (
-    <span className="flex items-center gap-2 text-mute">
-      <span className="h-1.5 w-20 overflow-hidden rounded-full bg-paper" aria-hidden="true">
-        <span className="block h-full rounded-full bg-cobalt" style={{ width: `${soldShare * 100}%` }} />
-      </span>
-      {available} of {total} seats left
-    </span>
   );
 }

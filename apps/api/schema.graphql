@@ -1,15 +1,18 @@
 """
-The single source of truth for the API contract. Both apps generate TypeScript
-types from this file with `pnpm codegen`.
+The API contract. Both apps generate TypeScript types from this file (`pnpm codegen`).
 """
+
 scalar DateTime
 
 type Query {
-  "Events ordered by start time. Cursor-paginated (Relay connection style)."
-  events(first: Int = 12, after: String, city: String): EventConnection!
+  health: Health!
   event(id: ID!): Event
-  "Distinct cities that have at least one venue, for filtering."
-  cities: [String!]!
+  events(limit: Int! = 10): [Event!]!
+}
+
+type Health {
+  postgres: Boolean!
+  redis: Boolean!
 }
 
 type Venue {
@@ -32,20 +35,13 @@ type Event {
   startsAt: DateTime!
   status: EventStatus!
   venue: Venue!
-  "Seat counts by status. Cached in Redis for a few seconds."
-  availability: Availability!
-  "Every seat for this event, ordered by section, row and number."
+  # availability: Availability!
   seats: [EventSeat!]!
 }
 
-type Availability {
-  total: Int!
-  available: Int!
-  held: Int!
-  sold: Int!
-  "Cheapest available seat, or null when nothing is available."
-  minPriceCents: Int
-}
+# type Availability {
+
+# }
 
 enum SeatStatus {
   AVAILABLE
@@ -62,17 +58,14 @@ type EventSeat {
   status: SeatStatus!
 }
 
-type EventConnection {
-  edges: [EventEdge!]!
-  pageInfo: PageInfo!
-}
+# type EventConnection {
 
-type EventEdge {
-  cursor: String!
-  node: Event!
-}
+# }
 
-type PageInfo {
-  hasNextPage: Boolean!
-  endCursor: String
-}
+# type EventEdge {
+
+# }
+
+# type PageInfo {
+
+# }

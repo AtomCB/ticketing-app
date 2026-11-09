@@ -1,0 +1,113 @@
+{
+  "_about": "Sample content for your seed script. Each section is a grid of rows (A, B, C...) with seatsPerRow seats numbered from 1. An event's seat price is the section's basePriceCents times the event's priceMultiplier. soldRatio is the share of seats to mark sold so the seat map looks realistic. daysFromNow and hour are relative to when you run the seed, so events always land in the future.",
+  "venues": [
+    {
+      "name": "The Larkspur",
+      "city": "Chicago",
+      "sections": [
+        { "name": "Floor", "rows": 6, "seatsPerRow": 14, "basePriceCents": 8900 },
+        { "name": "Mezzanine", "rows": 4, "seatsPerRow": 16, "basePriceCents": 6200 },
+        { "name": "Balcony", "rows": 4, "seatsPerRow": 18, "basePriceCents": 3900 }
+      ]
+    },
+    {
+      "name": "Harbor Pavilion",
+      "city": "Seattle",
+      "sections": [
+        { "name": "Orchestra", "rows": 7, "seatsPerRow": 16, "basePriceCents": 7500 },
+        { "name": "Terrace", "rows": 5, "seatsPerRow": 20, "basePriceCents": 4500 }
+      ]
+    },
+    {
+      "name": "Union Hall",
+      "city": "Austin",
+      "sections": [
+        { "name": "Front", "rows": 3, "seatsPerRow": 10, "basePriceCents": 6500 },
+        { "name": "Main", "rows": 6, "seatsPerRow": 12, "basePriceCents": 4200 },
+        { "name": "Rear", "rows": 3, "seatsPerRow": 14, "basePriceCents": 2800 }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Marlow & The Night Shift",
+      "description": "A two-hour set of late-night soul from the Detroit nine-piece, touring their third record.",
+      "venue": "The Larkspur",
+      "daysFromNow": 6,
+      "hour": 20,
+      "priceMultiplier": 1.2,
+      "soldRatio": 0.55,
+      "status": "on_sale"
+    },
+    {
+      "name": "Open Mic Gone Wrong",
+      "description": "Five comics, one broken microphone and a strict no-phones policy.",
+      "venue": "Union Hall",
+      "daysFromNow": 9,
+      "hour": 21,
+      "priceMultiplier": 0.8,
+      "soldRatio": 0.3,
+      "status": "on_sale"
+    },
+    {
+      "name": "Cascadia Chamber Orchestra: Winter Program",
+      "description": "Sibelius, Pärt and a new commission by a Seattle composer.",
+      "venue": "Harbor Pavilion",
+      "daysFromNow": 13,
+      "hour": 19,
+      "priceMultiplier": 1,
+      "soldRatio": 0.4,
+      "status": "on_sale"
+    },
+    {
+      "name": "Paper Lanterns",
+      "description": "Dream-pop trio with a full visual show. All ages.",
+      "venue": "Union Hall",
+      "daysFromNow": 17,
+      "hour": 20,
+      "priceMultiplier": 1,
+      "soldRatio": 1,
+      "status": "sold_out"
+    },
+    {
+      "name": "The Ninth Inning: A Baseball Musical",
+      "description": "A minor-league team, one last season, eleven original songs.",
+      "venue": "The Larkspur",
+      "daysFromNow": 22,
+      "hour": 19,
+      "priceMultiplier": 1.4,
+      "soldRatio": 0.2,
+      "status": "on_sale"
+    },
+    {
+      "name": "Dana Okafor: Long Story Short",
+      "description": "An evening of storytelling from the host of the radio show of the same name.",
+      "venue": "Harbor Pavilion",
+      "daysFromNow": 30,
+      "hour": 20,
+      "priceMultiplier": 0.9,
+      "soldRatio": 0.1,
+      "status": "on_sale"
+    },
+    {
+      "name": "Brass Against the Machine Shop",
+      "description": "A twelve-piece brass band plays industrial rock. Earplugs recommended.",
+      "venue": "The Larkspur",
+      "daysFromNow": 41,
+      "hour": 21,
+      "priceMultiplier": 1,
+      "soldRatio": 0,
+      "status": "scheduled"
+    },
+    {
+      "name": "Lowland Folk Festival: Night One",
+      "description": "Six acts across one long evening, with a square-dance interval.",
+      "venue": "Union Hall",
+      "daysFromNow": 55,
+      "hour": 18,
+      "priceMultiplier": 1.1,
+      "soldRatio": 0.05,
+      "status": "on_sale"
+    }
+  ]
+}

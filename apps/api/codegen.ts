@@ -9,6 +9,7 @@ const config: CodegenConfig = {
       config: {
         useTypeImports: true,
         contextType: '../graphql/context.js#GraphQLContext',
+        enumsAsTypes: true,
         // Resolvers receive database rows as their parent, not the GraphQL shape.
         mappers: {
           Event: '../db/schema.js#EventRow',
@@ -25,7 +26,6 @@ const config: CodegenConfig = {
           },
           SeatStatus: { AVAILABLE: 'available', HELD: 'held', SOLD: 'sold' },
         },
-        enumsAsTypes: true,
         scalars: { DateTime: 'Date' },
       },
     },

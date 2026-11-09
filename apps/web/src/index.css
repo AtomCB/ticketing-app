@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
-/* Design tokens. Tailwind v4 turns each of these into utilities: bg-paper, text-ink, font-display… */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme {
   --color-ink: #1b2140;
   --color-mute: #646b88;
@@ -17,42 +18,47 @@
 }
 
 @layer base {
+  /* Page background and text on <html> itself, so overscroll areas (past the top or
+     bottom of the page) match the theme instead of showing white in dark mode. */
   html {
     background-color: var(--color-paper);
     color: var(--color-ink);
-    font-family: var(--font-sans);
-    font-feature-settings: 'tnum' 1;
-    -webkit-font-smoothing: antialiased;
   }
 
-  :focus-visible {
-    outline: 2px solid var(--color-cobalt);
-    outline-offset: 2px;
+  [data-theme='dark'] {
+    --color-ink: #eceff5;
+    --color-mute: #a3aac7;
+    --color-paper: #12162b;
+    --color-stock: #1c2240;
+    --color-rule: #2e3557;
+    --color-cobalt: #3d57eb;
+    --color-cobalt-deep: #8c9bff;
+    --color-sold: #3a4166;
+    /* marigold works on both backgrounds, so it isn't overridden */
+
+    color-scheme: dark; /* scrollbars and form controls go dark too */
   }
 }
 
 @layer components {
   /*
-   * The ticket: a white card with a perforated tear line before the stub.
-   * The notches are radial gradients in the page colour, punched out at the top and
-   * bottom of the tear line; the dashed border draws the perforation itself.
+   * The ticket shape: card background plus two half-circle notches punched out at the
+   * top and bottom of the tear line. The notches are radial gradients in the page
+   * colour, so they follow the theme. --stub is the stub's width (EventTicket reads it
+   * with w-(--stub)), which keeps the notches aligned with the dashed border.
    */
   .ticket {
-    --notch: 0.6rem;
-    --stub-width: 6rem;
+    --notch: 0.625rem;
+    --stub: 6rem;
     background:
-      radial-gradient(circle at calc(100% - var(--stub-width)) 0, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
-      radial-gradient(circle at calc(100% - var(--stub-width)) 100%, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
+      radial-gradient(circle at calc(100% - var(--stub)) 0, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
+      radial-gradient(circle at calc(100% - var(--stub)) 100%, var(--color-paper) var(--notch), transparent calc(var(--notch) + 0.5px)),
       var(--color-stock);
-    border-radius: 0.75rem;
-
-    @media (width >= 40rem) {
-      --stub-width: 7.5rem;
-    }
   }
 
-  .ticket-stub {
-    width: var(--stub-width);
-    border-left: 2px dashed var(--color-rule);
+  @media (width >= 40rem) {
+    .ticket {
+      --stub: 7.5rem;
+    }
   }
 }

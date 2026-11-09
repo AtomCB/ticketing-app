@@ -1,5 +1,5 @@
 {
-  "id": "1422535d-5db8-4328-94ec-b537d224732c",
+  "id": "1e9f445a-7332-4a63-a871-fb277230cf5d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -117,7 +117,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -273,35 +273,7 @@
           "notNull": true
         }
       },
-      "indexes": {
-        "seats_section_row_number_uq": {
-          "name": "seats_section_row_number_uq",
-          "columns": [
-            {
-              "expression": "section_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "row_label",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "seat_number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "seats_section_id_sections_id_fk": {
           "name": "seats_section_id_sections_id_fk",
@@ -354,29 +326,7 @@
           "default": 0
         }
       },
-      "indexes": {
-        "sections_venue_name_uq": {
-          "name": "sections_venue_name_uq",
-          "columns": [
-            {
-              "expression": "venue_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "sections_venue_id_venues_id_fk": {
           "name": "sections_venue_id_venues_id_fk",
@@ -423,6 +373,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_updated": {
+          "name": "last_updated",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
