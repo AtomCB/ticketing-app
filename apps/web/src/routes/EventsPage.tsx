@@ -32,20 +32,17 @@ const EventsQuery = graphql(`
 export type EventListItem = EventsQueryResult["events"][number];
 
 export function EventsPage() {
-  // const { data, isPending, refetch } = useQuery({
-  //   queryKey: ["events"],
-  //   queryFn: () => execute(EventsQuery),
-  // });
+  const { data, isPending, refetch } = useQuery({
+    queryKey: ["events"],
+    queryFn: () => execute(EventsQuery),
+  });
 
-  // // Each city once, in the order its first event appears. Depends on `data`, which
-  // // keeps the same identity between renders until new data arrives.
-  // const cities = useMemo(
-  //   () => ["All cities", ...new Set((data?.events ?? []).map((event) => event.venue.city))],
-  //   [data],
-  // );
-
-  const isPending = true;
-  const data = null
+  // Each city once, in the order its first event appears. Depends on `data`, which
+  // keeps the same identity between renders until new data arrives.
+  const cities = useMemo(
+    () => ["All cities", ...new Set((data?.events ?? []).map((event) => event.venue.city))],
+    [data],
+  );
 
   return (
     <div className="flex flex-col gap-10">
