@@ -7,7 +7,13 @@ scalar DateTime
 type Query {
   health: Health!
   event(id: ID!): Event
-  events(limit: Int! = 10): [Event!]!
+  """
+  Events in start order, a page at a time. Pass the previous page's
+  pageInfo.endCursor as `after` to get the next page. `city` filters before paging.
+  """
+  events(first: Int! = 10, after: String, city: String): EventConnection!
+  "Every city with a venue, sorted. Feeds the city filter."
+  cities: [String!]!
 }
 
 type Health {
@@ -58,14 +64,24 @@ type EventSeat {
   status: SeatStatus!
 }
 
-# type EventConnection {
+"""
+One page of events (a Relay-style connection). Always returned, even when nothing
+matches: then `edges` is empty and `hasNextPage` is false.
+"""
+type EventConnection {
+  edges: [EventEdge!]!
+  pageInfo: PageInfo!
+}
 
-# }
+"One event in a page, plus its position in the list."
+type EventEdge {
+  "Opaque. Pass it as `after` to get the events that come after this one."
+  cursor: String!
+  node: Event!
+}
 
-# type EventEdge {
-
-# }
-
-# type PageInfo {
-
-# }
+type PageInfo {
+  hasNextPage: Boolean!
+  "The last edge's cursor, or null when the page is empty."
+  endCursor: String
+}
