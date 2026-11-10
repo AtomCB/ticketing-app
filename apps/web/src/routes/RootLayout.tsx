@@ -1,10 +1,15 @@
 import { Link, NavLink, Outlet } from "react-router";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { buttonClasses } from "../components/ui/Button";
+import { useResolvedTheme, useThemeStore } from "../stores/theme";
 
 // Header, main and footer share one centred column, so their edges always line up.
 const container = "mx-auto w-full max-w-[1040px] px-6";
 
 export function RootLayout() {
+  const theme = useResolvedTheme();
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+
   return (
     // text-ink sets the default text colour, so text follows the theme in dark mode.
     <div className="flex min-h-dvh flex-col bg-paper text-ink">
@@ -14,7 +19,12 @@ export function RootLayout() {
           Usher
         </Link>
 
-        <nav aria-label="Main" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        {/* Phones: the nav drops to its own full-width row under the logo and theme toggle.
+            From sm up: ml-auto pushes the nav and toggle to the right, in one row. */}
+        <nav
+          aria-label="Main"
+          className="order-last flex w-full flex-wrap items-center gap-x-6 gap-y-2 sm:order-0 sm:ml-auto sm:w-auto"
+        >
           <NavItem to="/" end>
             What's on
           </NavItem>
@@ -25,6 +35,9 @@ export function RootLayout() {
             Sign in
           </Link>
         </nav>
+
+        {/* A setting, not navigation, so it sits outside <nav>. */}
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </header>
 
       <main className={`${container} flex-1 pt-8 pb-16`}>
