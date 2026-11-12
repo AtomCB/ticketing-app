@@ -102,17 +102,10 @@ export const resolvers: Resolvers = {
   },
 
   Event: {
-    venue: async (parent, _args, { db }) => {
-      const [row] = await db
-        .select()
-        .from(venues)
-        .where(eq(venues.id, parent.venueId));
-      if (!row)
-        throw new Error(
-          `Event ${parent.id} references missing venue ${parent.venueId}`,
-        );
-      return row;
-    },
+    // Batched: every event on the page asks the same per-request loader, which makes
+    // one `where id in (...)` query. A missing venue rejects the load with
+    // "Venue <id> not found" (see loaders.ts), so there's no null to check for here.
+    venue: (parent, _args, { loaders }) => loaders.venueById.load(parent.venueId),
     seats: async (parent, _args, { db }) => {
       return await db
         .select({
