@@ -13,6 +13,10 @@
   --color-marigold: #f5b83d;
   --color-sold: #c5cad8;
   --color-shimmer: #f8f9fc; /* the highlight that sweeps across loading placeholders */
+  --color-seat: #5b6fe6; /* outline of an available seat */
+  /* Outline of a picked seat (fill is marigold). Darker than the mock's #d99a1e so the
+     picked seat's edge reaches 3:1 against the white card (3.6:1); #d99a1e was 2.4:1. */
+  --color-seat-picked: #b7791f;
 
   --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
@@ -36,6 +40,8 @@
     --color-cobalt-deep: #8c9bff;
     --color-sold: #3a4166;
     --color-shimmer: #283058;
+    --color-seat: #8c9bff;
+    --color-seat-picked: #f5b83d; /* marigold already stands out on the dark card */
     /* marigold works on both backgrounds, so it isn't overridden */
 
     color-scheme: dark; /* scrollbars and form controls go dark too */
