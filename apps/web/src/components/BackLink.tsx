@@ -1,9 +1,8 @@
 import type { ComponentProps } from 'react';
 import { Link } from 'react-router';
+import { focusRing } from './ui/controlBase';
 
-const backLinkClasses =
-  'rounded-sm font-semibold text-cobalt-deep transition-colors hover:text-cobalt ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt';
+const backLinkClasses = `rounded-sm font-semibold text-cobalt-deep transition-colors hover:text-cobalt ${focusRing}`;
 
 type BackLinkProps = Omit<ComponentProps<typeof Link>, 'className'>;
 

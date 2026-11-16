@@ -32,3 +32,8 @@ const usd = new Intl.NumberFormat('en-US', {
 export function formatPrice(cents: number) {
   return usd.format(cents / 100);
 }
+
+/** A seat's name for labels and lists: "Floor, row C, seat 7". */
+export function seatName(seat: { section: string; row: string; number: number }) {
+  return `${seat.section}, row ${seat.row}, seat ${seat.number}`;
+}

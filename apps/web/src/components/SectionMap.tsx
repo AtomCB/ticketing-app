@@ -1,7 +1,8 @@
-import type { Seat } from "../routes/EventPage";
+import type { Seat } from "../lib/eventQuery";
 import { useMemo } from "react";
 import { usePickedSeatsStore } from "../stores/pickedSeats";
-import { formatPrice } from "../lib/format";
+import { formatPrice, seatName } from "../lib/format";
+import { focusRing } from "./ui/controlBase";
 
 interface SectionMapProps {
   eventId: string;
@@ -27,33 +28,42 @@ export function SectionMap({ eventId, seats }: SectionMapProps) {
   }
 
   return (
-    <div>
-      <div className="flex flex-col gap-2 items-center">
-        <div className="flex gap-2 items-center">
-          <span className="font-bold text-lg">{seats[0].section}</span>
-          <span className="text-mute">{formatPrice(seats[0].priceCents)}</span>
-        </div>
+    <div className="flex flex-col items-center">
+      {/* A heading, so screen reader users can jump from section to section. */}
+      <h3 className="mb-3 flex items-baseline gap-2">
+        <span className="font-display text-lg font-bold">{seats[0].section}</span>
+        <span className="text-sm font-normal text-mute">{formatPrice(seats[0].priceCents)}</span>
+      </h3>
 
-        <div className="flex flex-col gap-2">
-          {[...seatMap.values()].map(seats => (
-            <SeatRow key={seats[0]!.row} eventId={eventId} seats={seats} />
-          ))}
-        </div>
+      <div className="flex flex-col gap-1.5">
+        {[...seatMap.values()].map((rowSeats) => (
+          <SeatRow key={rowSeats[0]!.row} eventId={eventId} seats={rowSeats} />
+        ))}
       </div>
     </div>
   );
 }
 
-
 function SeatRow({ eventId, seats }: SectionMapProps) {
+  const row = seats[0]!.row;
   return (
-    <div className="flex justify-between gap-2">
-      <span>{seats[0]!.row}</span>
+    <div className="flex items-center gap-1.5">
+      <RowLabel>{row}</RowLabel>
       {seats.map((seat) => (
         <SeatButton key={seat.id} eventId={eventId} seat={seat} />
       ))}
-      <span>{seats[0]!.row}</span>
+      <RowLabel>{row}</RowLabel>
     </div>
+  );
+}
+
+// Visual only: every seat's label already says its row, so screen readers would
+// otherwise hear the row letter again before and after each row.
+function RowLabel({ children }: { children: string }) {
+  return (
+    <span aria-hidden="true" className="w-4 text-center text-xs text-mute">
+      {children}
+    </span>
   );
 }
 
@@ -64,8 +74,7 @@ function SeatRow({ eventId, seats }: SectionMapProps) {
 // Chair shape: corners rounded more at the top (the backrest) than the bottom.
 const seatClasses =
   "block size-6 cursor-pointer rounded-t-[9px] rounded-b-[3px] border-2 border-seat bg-stock " +
-  "transition-colors hover:bg-seat/15 " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt " +
+  `transition-colors hover:bg-seat/15 ${focusRing} ` +
   "aria-pressed:border-seat-picked aria-pressed:bg-marigold " +
   "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-sold";
 
@@ -78,7 +87,7 @@ function SeatButton({ seat, eventId }: { seat: Seat; eventId: string; }) {
   // "Picked" is the viewer's own choice and lives on the client, not in seat.status.
   const taken = seat.status !== "AVAILABLE";
   const label =
-    `${seat.section}, row ${seat.row}, seat ${seat.number}, ${formatPrice(seat.priceCents)}` +
+    `${seatName(seat)}, ${formatPrice(seat.priceCents)}` +
     (taken ? ", taken" : "");
 
   return (

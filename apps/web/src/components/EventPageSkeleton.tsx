@@ -24,8 +24,8 @@ export function EventPageSkeleton() {
           </div>
         </div>
 
-        <div className="mt-10 flex gap-6">
-          <div className="flex grow flex-col items-center gap-10 rounded-lg bg-stock px-12 py-6">
+        <div className="mt-10 flex flex-wrap items-start gap-6">
+          <div className="flex min-w-0 grow-999 basis-140 flex-col items-center gap-10 rounded-lg bg-stock px-4 py-6 sm:px-12">
             <div className="skeleton-bar mx-12 h-11 self-stretch rounded-b-full" />
             {[4, 3, 3].map((rows, section) => (
               <div key={section} className="flex flex-col items-center gap-2">
@@ -37,7 +37,7 @@ export function EventPageSkeleton() {
             ))}
           </div>
 
-          <div className="flex w-70 shrink-0 flex-col gap-4 rounded-lg bg-stock p-8">
+          <div className="flex grow basis-70 flex-col gap-4 rounded-lg bg-stock p-5">
             <div className="skeleton-bar h-6 w-32 rounded-md" />
             <div className="skeleton-bar h-4 w-full rounded-md" />
             <div className="skeleton-bar h-4 w-5/6 rounded-md" />

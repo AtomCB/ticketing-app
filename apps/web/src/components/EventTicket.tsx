@@ -51,7 +51,7 @@ export function EventTicket({ event }: EventTicketProps) {
           one notch radius stops the dashed line where the notches begin, instead of
           drawing it through them. */}
       <div className="my-(--notch) flex w-(--stub) shrink-0 flex-col items-center justify-center border-l-2 border-dashed border-rule px-2 py-4 text-center">
-        <span className="text-sm text-mute">{date.month}</span>
+        <span className="text-sm text-mute">{date.monthShort}</span>
         <span className="font-display text-5xl leading-none font-extrabold">{date.day}</span>
         {label && <span className="mt-3 text-sm font-semibold">{label}</span>}
       </div>

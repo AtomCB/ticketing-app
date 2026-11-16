@@ -1,4 +1,12 @@
 /**
+ * The keyboard focus ring used across the app. Anything focusable that doesn't use
+ * controlBase (links, seat buttons, headings that receive focus) adds this instead, so
+ * every focused element looks the same.
+ */
+export const focusRing =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt';
+
+/**
  * Behaviour shared by every clickable control (Button, FilterPill): layout, a 44px
  * minimum touch target, weight, and the focus, disabled and cursor states.
  * Tailwind v4 gives buttons `cursor: default`, so the pointer is set here.
@@ -8,5 +16,5 @@
  */
 export const controlBase =
   'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 font-semibold transition-colors ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalt ' +
+  `${focusRing} ` +
   'disabled:cursor-not-allowed disabled:opacity-50';

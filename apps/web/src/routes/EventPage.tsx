@@ -1,40 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
-import { graphql } from "../gql";
 import { execute } from "../lib/graphql";
 import NotFound from "./NotFound";
 import { eventDateParts } from "../lib/format";
-import type { EventQuery as EventQueryResult } from "../gql/graphql";
+import { EventQuery, type Seat } from "../lib/eventQuery";
 import { SectionMap } from "../components/SectionMap";
 import { BackLink } from "../components/BackLink";
 import { EventPageSkeleton } from "../components/EventPageSkeleton";
 import { LoadError } from "../components/LoadError";
-
-export type Seat = NonNullable<EventQueryResult["event"]>["seats"][number];
-
-const EventQuery = graphql(`
-  query Event($id: ID!) {
-    event(id: $id) {
-      id
-      name
-      description
-      startsAt
-      status
-      venue {
-        name
-        city
-      }
-      seats {
-        id
-        section
-        row
-        number
-        priceCents
-        status
-      }
-    }
-  }
-`);
+import { PickedSeatsPanel } from "../components/PickedSeatsPanel";
+import { SeatLegend } from "../components/SeatLegend";
 
 export default function EventPage() {
   const { eventId } = useParams();
@@ -103,8 +78,6 @@ export default function EventPage() {
     sections[seat.section] = [seat];
   });
 
-  console.log(sections)
-
   return (
     <div>
       <BackLink to="/">All events</BackLink>
@@ -126,18 +99,37 @@ export default function EventPage() {
         </p>
       </div>
 
-      <div className="flex gap-6 mt-10">
-        <div className="grow rounded-lg bg-stock px-12 py-6 flex flex-col gap-10 items-center">
-          <div className="bg-ink text-stock mx-12 rounded-b-full text-center p-3 font-semibold self-stretch">Stage</div>
+      {/* Side by side when both fit; the panel wraps below the map on narrow screens.
+          The map's huge grow factor gives it nearly all the spare width. */}
+      <div className="mt-10 flex flex-wrap items-start gap-6">
+        {/* A landmark, so screen reader users can jump straight to the map. The visually
+            hidden h2 names it and keeps the heading order h1 > h2 > h3 (section names). */}
+        <section
+          aria-labelledby="seat-map-title"
+          className="min-w-0 grow-999 basis-140 rounded-lg bg-stock px-4 py-6 sm:px-12 flex flex-col gap-8 items-center"
+        >
+          <h2 id="seat-map-title" className="sr-only">
+            Seat map
+          </h2>
+          {/* Dark mode uses the rule colour, as in the dark mock; bg-ink would be near-white. */}
+          <div className="flex h-10 w-3/4 max-w-110 items-center justify-center rounded-b-[32px] bg-ink text-sm font-semibold text-stock dark:bg-rule dark:text-ink">
+            Stage
+          </div>
 
-          {Object.values(sections).map((section) => (
-            <SectionMap key={section[0]!.id} eventId={eventId} seats={section} />
-          ))}
-        </div>
+          {/* A row can be wider than a phone screen. The map scrolls sideways inside the
+              card instead of the whole page; w-max + mx-auto keeps it centred when it fits. */}
+          <div className="max-w-full overflow-x-auto pb-2">
+            <div className="mx-auto flex w-max flex-col items-center gap-8">
+              {Object.values(sections).map((section) => (
+                <SectionMap key={section[0]!.id} eventId={eventId} seats={section} />
+              ))}
+            </div>
+          </div>
 
-        <div className="rounded-lg bg-stock p-8">
-          TODO
-        </div>
+          <SeatLegend />
+        </section>
+
+        <PickedSeatsPanel eventId={eventId} />
       </div>
     </div>
   );

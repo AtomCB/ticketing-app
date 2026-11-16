@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Seat } from "../routes/EventPage";
+import type { Seat } from "../lib/eventQuery";
 
 /** Most seats one person can pick (and later hold) at once. */
 export const MAX_PICKS = 8;
