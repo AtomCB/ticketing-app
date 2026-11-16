@@ -131,7 +131,7 @@ export default function EventPage() {
           <div className="bg-ink text-stock mx-12 rounded-b-full text-center p-3 font-semibold self-stretch">Stage</div>
 
           {Object.values(sections).map((section) => (
-            <SectionMap key={section[0]!.id} seats={section} />
+            <SectionMap key={section[0]!.id} eventId={eventId} seats={section} />
           ))}
         </div>
 

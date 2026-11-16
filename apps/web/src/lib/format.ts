@@ -19,3 +19,16 @@ export function eventDateParts(iso: string) {
     time: time.format(date), // "8:00 PM"
   };
 }
+
+// Whole dollars show without cents ("$107"); anything else shows both digits ("$107.50").
+// trailingZeroDisplay does that; minimumFractionDigits: 0 alone would give "$107.5".
+const usd = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  trailingZeroDisplay: 'stripIfInteger',
+});
+
+/** Formats a price in cents for display. Keep sums in cents; format only at the end. */
+export function formatPrice(cents: number) {
+  return usd.format(cents / 100);
+}
