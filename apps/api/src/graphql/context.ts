@@ -11,5 +11,5 @@ export type GraphQLContext = {
 // Called once per request. Per-request things belong here: DataLoaders (milestone 6)
 // and the signed-in user (milestone 9).
 export function createContext(): GraphQLContext {
-  return { db, redis, loaders: createLoaders(db) };
+  return { db, redis, loaders: createLoaders(db, redis) };
 }
