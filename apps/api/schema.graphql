@@ -41,13 +41,17 @@ type Event {
   startsAt: DateTime!
   status: EventStatus!
   venue: Venue!
-  # availability: Availability!
+  availability: Availability!
   seats: [EventSeat!]!
 }
 
-# type Availability {
-
-# }
+type Availability {
+  available: Int!
+  total: Int!
+  held: Int!
+  sold: Int!
+  minPriceCents: Int
+}
 
 enum SeatStatus {
   AVAILABLE

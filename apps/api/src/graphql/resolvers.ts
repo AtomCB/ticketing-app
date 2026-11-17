@@ -106,6 +106,8 @@ export const resolvers: Resolvers = {
     // one `where id in (...)` query. A missing venue rejects the load with
     // "Venue <id> not found" (see loaders.ts), so there's no null to check for here.
     venue: (parent, _args, { loaders }) => loaders.venueById.load(parent.venueId),
+    // Batched the same way: one availability query for every event on the page.
+    availability: (parent, _args, { loaders }) => loaders.availabilityByEventId.load(parent.id),
     seats: async (parent, _args, { db }) => {
       return await db
         .select({
