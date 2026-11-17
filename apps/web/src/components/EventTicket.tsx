@@ -1,15 +1,14 @@
 import { Link } from "react-router";
 import type { EventListItem } from "../routes/EventsPage";
-import { eventDateParts } from "../lib/format";
+import { eventDateParts, formatPrice } from "../lib/format";
 
 interface EventTicketProps {
   event: EventListItem;
 }
 
-// What the stub shows under the date for each status. ON_SALE shows the lowest price
-// once the API has the availability field (milestone 8), so it's empty for now.
-// Typed by the status union, so adding a status to the schema makes this a type error
-// until it's handled here.
+// What the stub shows under the date for each status. ON_SALE has no fixed label: it shows
+// the cheapest available price instead (see stubText). Typed by the status union, so adding
+// a status to the schema makes this a type error until it's handled here.
 const stubLabel: Record<EventListItem["status"], string | null> = {
   SCHEDULED: "On sale soon",
   ON_SALE: null,
@@ -18,12 +17,26 @@ const stubLabel: Record<EventListItem["status"], string | null> = {
 };
 
 /**
+ * The stub's line under the date. On sale: "from $47", or "Sold out" when nothing is left
+ * to buy (every seat sold or held), even if the event's status hasn't caught up yet.
+ */
+function stubText({ status, availability }: EventListItem): string | null {
+  if (status !== "ON_SALE") return stubLabel[status];
+  return availability.minPriceCents === null
+    ? "Sold out"
+    : `from ${formatPrice(availability.minPriceCents)}`;
+}
+
+/**
  * One event on the list, drawn as a printed ticket: details on the left, a tear line,
  * and a stub with the date. The whole card links to the event page.
  */
 export function EventTicket({ event }: EventTicketProps) {
   const date = eventDateParts(event.startsAt);
-  const label = stubLabel[event.status];
+  const label = stubText(event);
+  const { available, total } = event.availability;
+  // The meter is for events you can buy seats for now; the stub covers every other case.
+  const showSeatsLeft = event.status === "ON_SALE" && available > 0;
 
   return (
     <Link
@@ -42,7 +55,7 @@ export function EventTicket({ event }: EventTicketProps) {
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           <time dateTime={event.startsAt}>{date.weekdayAndTime}</time>
-          {/* Seats-left bar goes here once the API has the availability field (milestone 8). */}
+          {showSeatsLeft && <SeatsLeft available={available} total={total} />}
         </div>
       </div>
 
@@ -56,5 +69,28 @@ export function EventTicket({ event }: EventTicketProps) {
         {label && <span className="mt-3 text-sm font-semibold">{label}</span>}
       </div>
     </Link>
+  );
+}
+
+/**
+ * "98 of 220 seats left", with a small bar that fills as seats go. The counts come from the
+ * cached availability, so they can be a few seconds behind; fine for a list, never for
+ * deciding whether a seat can be held. The bar is hidden from screen readers because the
+ * text already says the same thing.
+ */
+function SeatsLeft({ available, total }: { available: number; total: number }) {
+  const gonePercent = Math.round((1 - available / total) * 100);
+  return (
+    // On narrow cards the phrase drops below the bar as a whole instead of breaking mid-way;
+    // the bar is shorter on phones so it usually fits on one line.
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-mute">
+      <span aria-hidden="true" className="block h-1.5 w-14 overflow-hidden rounded-full bg-paper sm:w-20">
+        {/* A width that changes per event can't be a Tailwind class, so it's an inline style. */}
+        <span className="block h-full rounded-full bg-cobalt" style={{ width: `${gonePercent}%` }} />
+      </span>
+      <span className="whitespace-nowrap">
+        {available} of {total} {available === 1 ? "seat" : "seats"} left
+      </span>
+    </span>
   );
 }

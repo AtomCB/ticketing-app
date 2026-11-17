@@ -23,6 +23,11 @@ const EventsQuery = graphql(`
             city
           }
           status
+          availability {
+            total
+            available
+            minPriceCents
+          }
         }
       }
       pageInfo {

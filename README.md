@@ -24,11 +24,33 @@ The specific skills this project practices:
 | **GraphQL** | Schema-first API design, resolvers, DataLoader batching, subscriptions, typed clients via codegen |
 | **Tailwind CSS** | A custom design system with v4 theme tokens, built without a component library |
 
-The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar ground the backend work builds on. Everything beyond the starting skeleton is built by hand, following [BUILD_PLAN.md](BUILD_PLAN.md).
+The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar ground the backend work builds on. Everything beyond the starting skeleton is built by hand, milestone by milestone.
 
 ## Status
 
-**Skeleton.** Every service runs and is wired together end to end, proven by a health check page. The schema, API, caching and UI are built milestone by milestone; see [BUILD_PLAN.md](BUILD_PLAN.md) and the [UI mocks](https://claude.ai/artifact/QS7H9cFWNASXjXmbyuvah5).
+**v0.1: browsing and seat picking.** Part 1 of the build (the read path) is complete. Next up is holding seats: transactions, row locks and expiring holds. The [UI mocks](https://claude.ai/artifact/QS7H9cFWNASXjXmbyuvah5) show where it's headed.
+
+![The event list, light theme](docs/screenshots/events-light.png)
+
+| Event page and seat map | Dark theme | Phone |
+| --- | --- | --- |
+| ![Seat map with three seats picked](docs/screenshots/event-page-light.png) | ![The event list in the dark theme](docs/screenshots/events-dark.png) | ![The event list on a phone](docs/screenshots/events-phone.png) |
+
+### What works
+
+- **Event list with live seat counts.** Each ticket shows seats left and the cheapest available price, filterable by city (kept in the URL), with "Show more" pagination.
+- **Event page with a seat map.** Pick up to 8 seats with mouse or keyboard; a side panel lists them with a running total. Seat status refreshes every 15 seconds.
+- **Light and dark themes** that follow the OS until you choose, with no flash on load.
+- **Loading, empty and error states** throughout, and layouts that work down to phone width.
+
+### How it's built
+
+- **Postgres schema and migrations** with Drizzle: venues, sections, seats, events and per-event seats, with constraints and indexes that match the queries.
+- **Keyset (cursor) pagination.** `events(first, after)` pages with a `(starts_at, id) > (…)` row comparison backed by a composite index, so pages never repeat or skip events and stay fast however deep you go. Cursors are opaque and validated.
+- **No N+1 queries.** DataLoader batches venues and availability, so a page of events costs a fixed number of queries.
+- **Cache-aside availability in Redis.** Seat counts come from one `count(*) FILTER (…)` query per page, cached for 10 seconds: one `MGET` per page, SQL only for misses, and the app keeps working on Postgres alone if Redis is down. The cache is only ever used for display, never to decide whether a seat can be held.
+- **Typed end to end.** GraphQL Code Generator produces resolver types for the API and typed documents for the web app from one `schema.graphql`.
+- **Accessible seat map.** Every seat is a real button whose label gives section, row, number, price and state, so it works with a keyboard and a screen reader.
 
 ## Tech stack
 
@@ -55,15 +77,16 @@ The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar 
 
 ```bash
 pnpm install        # install dependencies for both apps
-pnpm services:up    # start Postgres and Redis in Docker
+pnpm bootstrap      # start Postgres and Redis, run migrations, load sample data
 pnpm dev            # run the API and web app together
 ```
 
 Then open:
 
-- Web app: http://localhost:5173 (shows whether the API, Postgres and Redis are reachable)
+- Web app: http://localhost:5173
 - GraphQL API and Apollo Sandbox: http://localhost:4000/graphql
-- Health check: http://localhost:4000/health
+- Service status page: http://localhost:5173/health (whether the API, Postgres and Redis are reachable)
+- Health check endpoint: http://localhost:4000/health
 
 The API works without a `.env` file because its defaults match `docker-compose.yml`. To change anything, copy `apps/api/.env.example` to `apps/api/.env`.
 
@@ -75,12 +98,13 @@ Run these from the repository root.
 
 | Command | What it does |
 | --- | --- |
+| `pnpm bootstrap` | Start the containers, apply migrations and seed sample data (first run, or after `services:reset`) |
 | `pnpm dev` | Generate GraphQL types, then run the API (port 4000) and web app (port 5173) in watch mode |
 | `pnpm services:up` / `services:down` | Start or stop the Postgres and Redis containers |
 | `pnpm services:reset` | Delete all container data and start fresh |
 | `pnpm db:generate` | Create a SQL migration from `apps/api/src/db/schema.ts` |
 | `pnpm db:migrate` | Apply pending migrations |
-| `pnpm db:seed` | Run `apps/api/src/db/seed.ts` |
+| `pnpm db:seed` | Replace all data with the sample venues and events, and clear cached data in Redis |
 | `pnpm db:studio` | Open Drizzle Studio to browse the database |
 | `pnpm codegen` | Regenerate TypeScript types from `apps/api/schema.graphql` |
 | `pnpm typecheck` / `pnpm build` | Typecheck or build both apps |
@@ -91,27 +115,36 @@ Run these from the repository root.
 apps/
   api/
     schema.graphql           The API contract. Both apps generate types from it.
+    drizzle/                 SQL migrations generated from db/schema.ts
     src/
       index.ts               Express + Apollo Server, health check, graceful shutdown
       env.ts                 Configuration with local defaults
       health.ts              Postgres and Redis connectivity check
-      redis.ts               Redis client
+      redis.ts               Redis client (fails fast when Redis is down)
+      cache.ts               Cache-aside helper: MGET, fetch misses, write back with a TTL
       db/
-        schema.ts            Your tables (milestone 1)
+        schema.ts            Tables, enums, constraints and indexes
         client.ts            Connection pool and Drizzle instance
-        seed.ts              Your seed script (milestone 2)
-        seed-data.json       Sample venues and events to seed
+        availability.ts      Seat counts for many events in one query
+        seed.ts              Loads the sample data and clears the cache
+        seed-data.json       Sample venues and events
       graphql/
-        resolvers.ts         Resolvers (starts with health only)
+        resolvers.ts         Query and type resolvers
+        loaders.ts           Per-request DataLoaders (venues, cached availability)
+        cursor.ts            Opaque pagination cursors
         context.ts           Per-request context
   web/
     src/
-      main.tsx               Router and TanStack Query setup
-      HealthPage.tsx         Placeholder page proving the stack works
-      lib/graphql.ts         Small typed fetch client for GraphQL
-      index.css              Tailwind import and your theme tokens
+      main.tsx               TanStack Query setup and app root
+      router.tsx             Routes
+      index.css              Tailwind theme tokens, light and dark
+      routes/                Pages: event list, event page, health, not found
+      components/            Ticket card, seat map, picked-seats panel, skeletons, states
+      components/ui/         Shared controls: Button, FilterPill, focus and control styles
+      stores/                Zustand stores: theme preference, picked seats
+      lib/                   GraphQL client, the event query, date and price formatting
+docs/screenshots/            Images used in this README
 docker-compose.yml           Postgres 18 and Redis 8
-BUILD_PLAN.md                What to build, in order
 ```
 
 ## Troubleshooting
@@ -119,5 +152,5 @@ BUILD_PLAN.md                What to build, in order
 - **`docker: command not found`.** Install Docker Desktop or OrbStack and open it once. If Docker Desktop is installed, check Settings, then Advanced, and set the CLI tools install to System.
 - **Port 5432 or 6379 is already in use.** Another Postgres or Redis is running locally. Stop it, or start the containers on other ports with `POSTGRES_PORT=5433 REDIS_PORT=6380 pnpm services:up` and set the matching URLs in `apps/api/.env`.
 - **`Cannot find module './gql'` or missing generated types.** Run `pnpm codegen`. Generated files are not committed.
-- **`db:migrate` fails before milestone 1.** That's expected: there are no migrations until you define tables and run `pnpm db:generate`.
+- **The event list is empty.** The database has no data yet. Run `pnpm db:seed` (or `pnpm bootstrap` on a fresh setup).
 - **"The API responded with 502"** in the web app means the API isn't running. Start it with `pnpm dev`.
