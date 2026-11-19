@@ -1,6 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import type { DB } from "./client.js";
-import { eventSeats } from "./schema.js";
+import { eventSeats, holds } from "./schema.js";
+import { activeHold, isAvailableSql, isHeldSql } from "./seatStatus.js";
 
 /** Seat counts for one event, plus its cheapest seat still on sale. */
 export interface Availability {
@@ -25,7 +26,9 @@ export const EMPTY_AVAILABILITY: Readonly<Availability> = Object.freeze({
 });
 
 /**
- * Availability for many events in one query (a count per status, via FILTER).
+ * Availability for many events in one query (a count per status, via FILTER). Held
+ * means in a hold that hasn't expired (see seatStatus.ts), so an expired hold's seats
+ * count as available again straight away.
  *
  * Returns exactly one entry per id, in the same order as `eventIds`, which is what a
  * DataLoader batch function must return. Events with no seats have no rows to group, so
@@ -43,13 +46,14 @@ export async function fetchAvailability(
       eventId: eventSeats.eventId,
       // count(*) is a bigint, which the pg driver returns as a string; ::int makes it a number.
       total: sql<number>`count(*)::int`,
-      available: sql<number>`count(*) filter (where ${eventSeats.status} = 'available')::int`,
-      held: sql<number>`count(*) filter (where ${eventSeats.status} = 'held')::int`,
+      available: sql<number>`count(*) filter (where ${isAvailableSql})::int`,
+      held: sql<number>`count(*) filter (where ${isHeldSql})::int`,
       sold: sql<number>`count(*) filter (where ${eventSeats.status} = 'sold')::int`,
       // min() keeps the column's type (integer), so no cast; null when no seat passes the filter.
-      minPriceCents: sql<number | null>`min(${eventSeats.priceCents}) filter (where ${eventSeats.status} = 'available')`,
+      minPriceCents: sql<number | null>`min(${eventSeats.priceCents}) filter (where ${isAvailableSql})`,
     })
     .from(eventSeats)
+    .leftJoin(holds, activeHold)
     .where(inArray(eventSeats.eventId, [...eventIds]))
     .groupBy(eventSeats.eventId);
 

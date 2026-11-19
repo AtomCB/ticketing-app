@@ -7,7 +7,6 @@
  *   3. Read that SQL file. This is the Postgres you're learning.
  *   4. pnpm db:migrate    -> applies it
  *
- * Start with BUILD_PLAN.md, milestone 1.
  * Docs: https://orm.drizzle.team/docs/sql-schema-declaration
  */
 
@@ -43,7 +42,10 @@ export const eventStatus = pgEnum("event_status", [
   "cancelled",
 ]);
 
-export const seatStatus = pgEnum("seat_status", ["available", "held", "sold"]);
+// Whether a seat can still be sold at all. Being held isn't stored here: a seat is held
+// while its hold_id points at a hold that hasn't expired (see db/seatStatus.ts), so an
+// expired hold frees its seats the moment it expires, with nothing to clean up.
+export const seatStatus = pgEnum("seat_status", ["available", "sold"]);
 
 export const venues = pgTable("venues", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -133,13 +135,15 @@ export const eventSeats = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    // A seat can only be sold once per event. This is the database's last line of
-    // defense against double-booking, whatever the application code does.
+    // Each physical seat appears once per event, so there's exactly one row to lock and
+    // update for it. (Two people can't hold or buy the same seat because holdSeats locks
+    // that row with SELECT ... FOR UPDATE; this index is what makes "that row" unique.)
     uniqueIndex("event_seats_event_seat_uq").on(t.eventId, t.seatId),
-    // Add composite index to speed up queries by seat status for an event.
+    // Seat counts by status for an event.
     index("event_seats_event_status_idx").on(t.eventId, t.status),
-    // Finding a hold's seats, and what Postgres scans when a hold is deleted.
-    index("event_seats_hold_id_idx").on(t.holdId),
+    // Finding a hold's seats, and what Postgres scans when a hold is deleted. Partial:
+    // most seats are in no hold, so leaving the nulls out keeps the index small.
+    index("event_seats_hold_id_idx").on(t.holdId).where(sql`${t.holdId} is not null`),
     check("event_seats_price_positive", sql`${t.priceCents} > 0`),
   ],
 );
@@ -153,8 +157,9 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('users_email_lower_uq').on(sql`lower(${t.email})`)
-  ]
+    // Case-insensitive: Adam@Example.com and adam@example.com are one account.
+    uniqueIndex("users_email_lower_uq").on(sql`lower(${t.email})`),
+  ],
 );
 
 /**
@@ -187,6 +192,7 @@ export const holds = pgTable(
 export type VenueRow = typeof venues.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type EventStatus = (typeof eventStatus.enumValues)[number];
+/** The stored status: available or sold. For held seats too, see db/seatStatus.ts. */
 export type EventSeatStatus = (typeof seatStatus.enumValues)[number];
 export type UserRow = typeof users.$inferSelect;
 export type HoldRow = typeof holds.$inferSelect;

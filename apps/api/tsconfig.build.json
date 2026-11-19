@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["src/db/seed.ts"]
+  "exclude": ["src/db/seed.ts", "src/scripts"]
 }

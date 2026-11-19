@@ -24,6 +24,12 @@ type Mutation {
   signIn(email: String!, password: String!): User!
   "Ends the current session. Returns true even if there was no session."
   signOut: Boolean!
+  """
+  Holds seats for the signed-in user for 10 minutes, all or nothing (up to 8, one hold
+  per event). If any seat was already taken, nothing is held and the result is
+  SeatsUnavailable, listing those seats.
+  """
+  holdSeats(eventId: ID!, seatIds: [ID!]!): HoldSeatsResult!
 }
 
 type Health {
@@ -104,3 +110,22 @@ type User {
   id: ID!
   email: String!
 }
+
+"Seats kept for one person while they check out. They go back on sale at expiresAt."
+type Hold {
+  id: ID!
+  expiresAt: DateTime!
+  seats: [EventSeat!]!
+}
+
+"Why a hold didn't happen: these seats were already sold or held by someone else."
+type SeatsUnavailable {
+  seats: [EventSeat!]!
+}
+
+"""
+What holdSeats returns. Losing a seat to someone faster is an expected outcome, not an
+error, so it's a result the client must handle (check __typename).
+"""
+union HoldSeatsResult = Hold | SeatsUnavailable
+

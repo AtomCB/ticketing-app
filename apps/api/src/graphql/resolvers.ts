@@ -6,6 +6,7 @@ import {
   DrizzleQueryError,
   eq,
   getTableColumns,
+  inArray,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -14,15 +15,19 @@ import { checkHealth } from "../health.js";
 import {
   events,
   eventSeats,
+  holds,
   seats,
   sections,
   users,
   venues,
 } from "../db/schema.js";
+import type { DB } from "../db/client.js";
+import { holdSeats, MAX_SEATS_PER_HOLD } from "../db/holds.js";
+import { activeHold, seatStatusSql } from "../db/seatStatus.js";
 import { decodeCursor, encodeCursor } from "./cursor.js";
 import { hashPassword, newPasswordProblem, verifyPassword } from "../auth/passwords.js";
 import { clearSessionCookie, createSession, destroySession, setSessionCookie } from "../auth/sessions.js";
-import type { CurrentUser } from "./context.js";
+import { requireUser, type CurrentUser } from "./context.js";
 
 /** Largest page a client can ask for, so one request can't pull the whole table. */
 const MAX_PAGE_SIZE = 50;
@@ -37,6 +42,30 @@ function isUniqueViolation(err: unknown): boolean {
     "code" in dbError &&
     dbError.code === "23505" // Postgres: unique_violation
   );
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Event seats as the API returns them (EventSeat), in seat-map order. Used by Event.seats
+ * and by holdSeats' results. Status includes whether each seat is in an active hold.
+ */
+function selectEventSeats(db: DB, where: SQL | undefined) {
+  return db
+    .select({
+      id: eventSeats.id,
+      section: sections.name,
+      row: seats.rowLabel,
+      number: seats.seatNumber,
+      priceCents: eventSeats.priceCents,
+      status: seatStatusSql,
+    })
+    .from(eventSeats)
+    .innerJoin(seats, eq(eventSeats.seatId, seats.id))
+    .innerJoin(sections, eq(seats.sectionId, sections.id))
+    .leftJoin(holds, activeHold)
+    .where(where)
+    .orderBy(asc(sections.sortOrder), asc(seats.rowLabel), asc(seats.seatNumber));
 }
 
 /** The form every email is stored and looked up in. */
@@ -216,6 +245,52 @@ export const resolvers: Resolvers = {
       clearSessionCookie(res);
       return true;
     },
+
+    // The transaction and its locks live in db/holds.ts. This checks the request,
+    // then turns the outcome into the GraphQL result or an error.
+    holdSeats: async (_parent, { eventId, seatIds }, context) => {
+      const user = requireUser(context); // UNAUTHENTICATED when signed out
+      const badInput = (message: string, argumentName: string) =>
+        new GraphQLError(message, { extensions: { code: "BAD_USER_INPUT", argumentName } });
+
+      const ids = [...new Set(seatIds)]; // the same seat twice is still one seat
+      // Postgres rejects a malformed uuid with an error that would surface as a server
+      // error, so check the format here and report it as bad input instead.
+      if (!UUID.test(eventId)) throw badInput("That event doesn't exist.", "eventId");
+      if (ids.length === 0 || ids.length > MAX_SEATS_PER_HOLD) {
+        throw badInput(`Choose between 1 and ${MAX_SEATS_PER_HOLD} seats.`, "seatIds");
+      }
+      if (!ids.every((id) => UUID.test(id))) throw badInput("Some of those seats don't exist.", "seatIds");
+
+      const outcome = await holdSeats(context.db, { userId: user.id, eventId, seatIds: ids });
+      switch (outcome.kind) {
+        case "held":
+          return {
+            id: outcome.holdId,
+            expiresAt: outcome.expiresAt,
+            seats: await selectEventSeats(context.db, inArray(eventSeats.id, outcome.seatIds)),
+          };
+        case "unavailable":
+          // Read after the transaction, so each seat shows why it's taken (sold or held).
+          return { seats: await selectEventSeats(context.db, inArray(eventSeats.id, outcome.seatIds)) };
+        case "event_not_found":
+          throw badInput("That event doesn't exist.", "eventId");
+        case "event_not_on_sale":
+          throw badInput("Tickets for this event aren't on sale.", "eventId");
+        case "unknown_seats":
+          throw badInput("Some of those seats aren't part of this event.", "seatIds");
+        case "already_holding":
+          throw new GraphQLError(
+            "You already have seats held for this event. Release them to choose different ones.",
+            { extensions: { code: "HOLD_EXISTS" } },
+          );
+      }
+    },
+  },
+
+  // Tells Apollo which member of the union a result is: only a Hold has expiresAt.
+  HoldSeatsResult: {
+    __resolveType: (result) => ("expiresAt" in result ? "Hold" : "SeatsUnavailable"),
   },
 
   Event: {
@@ -227,25 +302,6 @@ export const resolvers: Resolvers = {
     // Batched the same way: one availability query for every event on the page.
     availability: (parent, _args, { loaders }) =>
       loaders.availabilityByEventId.load(parent.id),
-    seats: async (parent, _args, { db }) => {
-      return await db
-        .select({
-          id: eventSeats.id,
-          section: sections.name,
-          row: seats.rowLabel,
-          number: seats.seatNumber,
-          priceCents: eventSeats.priceCents,
-          status: eventSeats.status,
-        })
-        .from(eventSeats)
-        .innerJoin(seats, eq(eventSeats.seatId, seats.id))
-        .innerJoin(sections, eq(seats.sectionId, sections.id))
-        .where(eq(eventSeats.eventId, parent.id))
-        .orderBy(
-          asc(sections.sortOrder),
-          asc(seats.rowLabel),
-          asc(seats.seatNumber),
-        );
-    },
+    seats: (parent, _args, { db }) => selectEventSeats(db, eq(eventSeats.eventId, parent.id)),
   },
 };
