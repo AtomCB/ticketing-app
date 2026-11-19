@@ -28,7 +28,7 @@ The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar 
 
 ## Status
 
-**v0.1: browsing and seat picking.** Part 1 of the build (the read path) is complete. Next up is holding seats: transactions, row locks and expiring holds. The [UI mocks](https://claude.ai/artifact/QS7H9cFWNASXjXmbyuvah5) show where it's headed.
+**v0.1: browsing and seat picking, plus accounts.** Part 1 of the build (the read path) is complete, and Part 2 has started with accounts and sessions. Next up is holding seats: transactions, row locks and expiring holds. The [UI mocks](https://claude.ai/artifact/QS7H9cFWNASXjXmbyuvah5) show where it's headed.
 
 ![The event list, light theme](docs/screenshots/events-light.png)
 
@@ -40,6 +40,7 @@ The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar 
 
 - **Event list with live seat counts.** Each ticket shows seats left and the cheapest available price, filterable by city (kept in the URL), with "Show more" pagination.
 - **Event page with a seat map.** Pick up to 8 seats with mouse or keyboard; a side panel lists them with a running total. Seat status refreshes every 15 seconds.
+- **Accounts.** Create an account or sign in from the header or the seat panel, and you're taken back to where you were, with your picked seats still there. You stay signed in for 30 days after your last visit, across API restarts.
 - **Light and dark themes** that follow the OS until you choose, with no flash on load.
 - **Loading, empty and error states** throughout, and layouts that work down to phone width.
 
@@ -49,6 +50,8 @@ The frontend (React, TypeScript, Vite, TanStack Query, Zustand) is the familiar 
 - **Keyset (cursor) pagination.** `events(first, after)` pages with a `(starts_at, id) > (…)` row comparison backed by a composite index, so pages never repeat or skip events and stay fast however deep you go. Cursors are opaque and validated.
 - **No N+1 queries.** DataLoader batches venues and availability, so a page of events costs a fixed number of queries.
 - **Cache-aside availability in Redis.** Seat counts come from one `count(*) FILTER (…)` query per page, cached for 10 seconds: one `MGET` per page, SQL only for misses, and the app keeps working on Postgres alone if Redis is down. The cache is only ever used for display, never to decide whether a seat can be held.
+- **Sessions in Redis rather than JWTs.** Signing in stores a random 256-bit session id, mapped to the user id, in Redis with a 30-day TTL that slides on every request. The browser holds it in an `httpOnly`, `SameSite=Lax` cookie. Signing out deletes the key, so the session ends on the server straight away, which a JWT can't do without a deny list.
+- **Passwords hashed with Argon2id.** The rules follow the shape of NIST SP 800-63B (a minimum length, no "must contain a symbol" rules), with a deliberately low 6-character minimum for the demo. Sign-in gives the same message, and takes the same time, whether or not an email has an account, so it can't be used to find out who's registered. The sign-in page only redirects back to paths on this site, so its `?next=` parameter can't be used for phishing links.
 - **Typed end to end.** GraphQL Code Generator produces resolver types for the API and typed documents for the web app from one `schema.graphql`.
 - **Accessible seat map.** Every seat is a real button whose label gives section, row, number, price and state, so it works with a keyboard and a screen reader.
 
@@ -104,7 +107,7 @@ Run these from the repository root.
 | `pnpm services:reset` | Delete all container data and start fresh |
 | `pnpm db:generate` | Create a SQL migration from `apps/api/src/db/schema.ts` |
 | `pnpm db:migrate` | Apply pending migrations |
-| `pnpm db:seed` | Replace all data with the sample venues and events, and clear cached data in Redis |
+| `pnpm db:seed` | Replace all data with the sample venues and events (this deletes any accounts too), and clear cached data in Redis |
 | `pnpm db:studio` | Open Drizzle Studio to browse the database |
 | `pnpm codegen` | Regenerate TypeScript types from `apps/api/schema.graphql` |
 | `pnpm typecheck` / `pnpm build` | Typecheck or build both apps |
@@ -122,6 +125,9 @@ apps/
       health.ts              Postgres and Redis connectivity check
       redis.ts               Redis client (fails fast when Redis is down)
       cache.ts               Cache-aside helper: MGET, fetch misses, write back with a TTL
+      auth/
+        sessions.ts          Redis sessions and the session cookie
+        passwords.ts         Argon2id hashing and the rules for new passwords
       db/
         schema.ts            Tables, enums, constraints and indexes
         client.ts            Connection pool and Drizzle instance
@@ -129,20 +135,21 @@ apps/
         seed.ts              Loads the sample data and clears the cache
         seed-data.json       Sample venues and events
       graphql/
-        resolvers.ts         Query and type resolvers
+        resolvers.ts         Query, mutation and type resolvers
         loaders.ts           Per-request DataLoaders (venues, cached availability)
         cursor.ts            Opaque pagination cursors
-        context.ts           Per-request context
+        context.ts           Per-request context: loaders and the signed-in user
   web/
     src/
       main.tsx               TanStack Query setup and app root
       router.tsx             Routes
       index.css              Tailwind theme tokens, light and dark
-      routes/                Pages: event list, event page, health, not found
-      components/            Ticket card, seat map, picked-seats panel, skeletons, states
-      components/ui/         Shared controls: Button, FilterPill, focus and control styles
+      routes/                Pages: event list, event page, sign in, health, not found
+      components/            Ticket card, seat map, picked-seats panel, header account controls, skeletons, states
+      components/auth/       Sign-in and create-account forms
+      components/ui/         Shared controls: Button, FilterPill, SegmentedControl, TextField, PasswordField, FormAlert, focus and control styles
       stores/                Zustand stores: theme preference, picked seats
-      lib/                   GraphQL client, the event query, date and price formatting
+      lib/                   GraphQL client, the event query, auth hooks, safe redirects, date and price formatting
 docs/screenshots/            Images used in this README
 docker-compose.yml           Postgres 18 and Redis 8
 ```

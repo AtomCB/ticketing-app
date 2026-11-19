@@ -1,8 +1,11 @@
 import { useId, useRef } from "react";
+import { Link } from "react-router";
+import { useMe } from "../lib/auth";
+import { signInPath } from "../lib/redirect";
 import type { Seat } from "../lib/eventQuery";
 import { MAX_PICKS, usePickedSeatsStore } from "../stores/pickedSeats";
 import { formatPrice, seatName } from "../lib/format";
-import { Button } from "./ui/Button";
+import { Button, buttonClasses } from "./ui/Button";
 import { controlBase, focusRing } from "./ui/controlBase";
 
 // Module level, so the selector below returns the same empty array every time. An inline
@@ -21,6 +24,7 @@ export function PickedSeatsPanel({ eventId }: { eventId: string }) {
   const seats = usePickedSeatsStore((s) => (s.eventId === eventId ? s.seats : NO_SEATS));
   const remove = usePickedSeatsStore((s) => s.remove);
   const clear = usePickedSeatsStore((s) => s.clear);
+  const { data: me, isPending: meIsPending } = useMe();
 
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -98,12 +102,20 @@ export function PickedSeatsPanel({ eventId }: { eventId: string }) {
         <span className="font-display text-[26px] font-bold">{formatPrice(total)}</span>
       </div>
 
-      {/* TODO (milestone 10): place the hold. Until then the button can't do anything.
+      {/* Holding needs an account. Signed out, the button becomes a link to sign in that
+          comes back here; the picks stay in the store meanwhile.
           py-3 makes it 48px tall like the mock; min-h-12 would clash with controlBase's
           min-h-11 and win only by stylesheet order. */}
-      <Button disabled className="mt-5 w-full py-3">
-        {holdLabel}
-      </Button>
+      {!me && !meIsPending ? (
+        <Link to={signInPath(`/events/${eventId}`)} className={buttonClasses("primary", "mt-5 w-full py-3")}>
+          Sign in to hold seats
+        </Link>
+      ) : (
+        // TODO (milestone 10): place the hold. Until then the button can't do anything.
+        <Button disabled className="mt-5 w-full py-3">
+          {holdLabel}
+        </Button>
+      )}
       {/* A live region: at the limit, extra seats on the map silently do nothing, so this
           says why, and screen readers announce the change. */}
       <p role="status" className="mt-2.5 text-[13px] leading-normal text-mute">

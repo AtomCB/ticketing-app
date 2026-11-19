@@ -17,6 +17,7 @@
   /* Outline of a picked seat (fill is marigold). Darker than the mock's #d99a1e so the
      picked seat's edge reaches 3:1 against the white card (3.6:1); #d99a1e was 2.4:1. */
   --color-seat-picked: #b7791f;
+  --color-alert: #b3410e; /* errors and the urgent hold timer: 5.6:1 on the card */
 
   --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
@@ -42,6 +43,7 @@
     --color-shimmer: #283058;
     --color-seat: #8c9bff;
     --color-seat-picked: #f5b83d; /* marigold already stands out on the dark card */
+    --color-alert: #ff8a5b;
     /* marigold works on both backgrounds, so it isn't overridden */
 
     color-scheme: dark; /* scrollbars and form controls go dark too */

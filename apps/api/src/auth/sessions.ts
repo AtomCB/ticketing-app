@@ -73,9 +73,8 @@ const cookieAttributes: CookieOptions = {
 
 /**
  * Sends the session cookie. It lives as long as the session, counted from now; Express
- * wants milliseconds. The Redis session's expiry slides with activity, but this cookie's
- * doesn't, so someone active every day is still signed out SESSION_TTL_SECONDS after
- * signing in. To make it truly slide, call this again whenever a session is used.
+ * wants milliseconds. createContext calls this on every request with a valid session, so
+ * the cookie's expiry slides along with the Redis session's.
  */
 export function setSessionCookie(res: Response, sessionId: string): void {
   res.cookie(SESSION_COOKIE, sessionId, { ...cookieAttributes, maxAge: SESSION_TTL_SECONDS * 1000 });

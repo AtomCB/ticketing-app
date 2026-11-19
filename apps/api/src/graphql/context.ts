@@ -2,7 +2,7 @@ import type { ExpressContextFunctionArgument } from '@as-integrations/express5';
 import { parseCookie } from 'cookie';
 import { eq } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
-import { getSessionUserId, SESSION_COOKIE } from '../auth/sessions.js';
+import { getSessionUserId, SESSION_COOKIE, setSessionCookie } from '../auth/sessions.js';
 import { db, type DB } from '../db/client.js';
 import { users, type UserRow } from '../db/schema.js';
 import { redis } from '../redis.js';
@@ -27,6 +27,11 @@ export type GraphQLContext = {
 // signed-in user, read from the session cookie.
 export async function createContext({ req, res }: ExpressContextFunctionArgument): Promise<GraphQLContext> {
   const { user, sessionId } = await loadSession(req.headers.cookie);
+  // Reading the session just pushed its Redis expiry 30 days out; send the cookie again
+  // so it expires then too. Without this the cookie would still run out 30 days after
+  // sign-in, signing out someone who uses the app every day. (A signIn or signOut later
+  // in this request sets the cookie again, and the browser keeps the last one.)
+  if (sessionId) setSessionCookie(res, sessionId);
   return { db, redis, loaders: createLoaders(db, redis), user, sessionId, res };
 }
 

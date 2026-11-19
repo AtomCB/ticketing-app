@@ -5,6 +5,7 @@ import RouteError from "./routes/RouteError";
 import { EventsPage } from "./routes/EventsPage";
 import EventPage from "./routes/EventPage";
 import NotFound from "./routes/NotFound";
+import SignIn from "./routes/SignIn";
 
 const router = createBrowserRouter([
   {
@@ -14,6 +15,10 @@ const router = createBrowserRouter([
       {
         index: true,
         Component: EventsPage,
+      },
+      {
+        path: '/sign-in',
+        Component: SignIn,
       },
       {
         path: "/health",

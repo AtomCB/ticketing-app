@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router";
+import { AccountNav } from "../components/AccountNav";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { buttonClasses } from "../components/ui/Button";
 import { useResolvedTheme, useThemeStore } from "../stores/theme";
 
 // Header, main and footer share one centred column, so their edges always line up.
@@ -30,10 +30,7 @@ export function RootLayout() {
           </NavItem>
           {/* /my-tickets is still a TODO; until then it shows the not-found page. */}
           <NavItem to="/my-tickets">My tickets</NavItem>
-          {/* Navigation, so a Link styled as a button. /sign-in is still TODO. */}
-          <Link to="/sign-in" className={buttonClasses("dark")}>
-            Sign in
-          </Link>
+          <AccountNav />
         </nav>
 
         {/* A setting, not navigation, so it sits outside <nav>. */}
