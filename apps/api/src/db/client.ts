@@ -10,7 +10,7 @@ export const pool = new pg.Pool({ connectionString: env.DATABASE_URL, max: 10 })
 export const db = drizzle({
   client: pool,
   schema,
-  logger: process.env.NODE_ENV !== 'production' && process.env.LOG_SQL !== 'false',
+  logger: !env.IS_PRODUCTION && process.env.LOG_SQL !== 'false',
 });
 
 export type DB = typeof db;

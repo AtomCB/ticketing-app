@@ -72,7 +72,7 @@ async function seed() {
   await db.transaction(async (tx) => {
     // Delete everything currently in the DB.
     await tx.execute(
-      sql`truncate table event_seats, events, seats, sections, venues restart identity cascade`,
+      sql`truncate table event_seats, events, seats, sections, venues, users restart identity cascade`,
     );
 
     const venueIds = new Map<string, string>();

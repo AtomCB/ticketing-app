@@ -14,6 +14,16 @@ type Query {
   events(first: Int! = 10, after: String, city: String): EventConnection!
   "Every city with a venue, sorted. Feeds the city filter."
   cities: [String!]!
+  me: User
+}
+
+type Mutation {
+  "Creates an account and signs it in."
+  signUp(email: String!, password: String!): User!
+  "Signs in. Fails with the same error for an unknown email or a wrong password."
+  signIn(email: String!, password: String!): User!
+  "Ends the current session. Returns true even if there was no session."
+  signOut: Boolean!
 }
 
 type Health {
@@ -88,4 +98,9 @@ type PageInfo {
   hasNextPage: Boolean!
   "The last edge's cursor, or null when the page is empty."
   endCursor: String
+}
+
+type User {
+  id: ID!
+  email: String!
 }

@@ -137,7 +137,21 @@ export const eventSeats = pgTable(
   ],
 );
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('users_email_lower_uq').on(sql`lower(${t.email})`)
+  ]
+);
+
 export type VenueRow = typeof venues.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type EventStatus = (typeof eventStatus.enumValues)[number];
 export type EventSeatStatus = (typeof seatStatus.enumValues)[number];
+export type UserRow = typeof users.$inferSelect;

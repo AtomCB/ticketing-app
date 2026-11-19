@@ -9,4 +9,6 @@ export const env = {
   REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
   PORT: Number(process.env.PORT ?? 4000),
   WEB_ORIGIN: process.env.WEB_ORIGIN ?? 'http://localhost:5173',
+  /** Read once here: a typo in `env.IS_PRODUCTION` is a type error; one in process.env isn't. */
+  IS_PRODUCTION: process.env.NODE_ENV === 'production',
 };

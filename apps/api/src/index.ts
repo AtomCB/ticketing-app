@@ -37,7 +37,7 @@ app.use(
   '/graphql',
   cors({ origin: env.WEB_ORIGIN }),
   express.json(),
-  expressMiddleware(apollo, { context: async () => createContext() }),
+  expressMiddleware(apollo, { context: async ({ req, res }) => createContext({ req, res }) }),
 );
 
 httpServer.listen(env.PORT, () => {

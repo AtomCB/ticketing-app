@@ -15,6 +15,20 @@
       "when": 1793144694554,
       "tag": "0001_keen_changeling",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794960704437,
+      "tag": "0002_wonderful_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795038361638,
+      "tag": "0003_noisy_deathstrike",
+      "breakpoints": true
     }
   ]
 }
