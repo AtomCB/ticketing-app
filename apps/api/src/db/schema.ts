@@ -31,6 +31,9 @@ import {
     ^                    |
     |                    |
     |- events <----- event_seats
+         ^               |
+         |               v  hold_id, while the seat is held
+         |----------- holds -----> users
 */
 
 export const eventStatus = pgEnum("event_status", [
@@ -122,6 +125,8 @@ export const eventSeats = pgTable(
       .references(() => seats.id, { onDelete: "restrict" }),
     priceCents: integer("price_cents").notNull(),
     status: seatStatus("status").notNull().default("available"),
+    // The hold this seat is in, if any. Deleting a hold frees its seats.
+    holdId: uuid("hold_id").references(() => holds.id, { onDelete: "set null" }),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow()
@@ -133,6 +138,8 @@ export const eventSeats = pgTable(
     uniqueIndex("event_seats_event_seat_uq").on(t.eventId, t.seatId),
     // Add composite index to speed up queries by seat status for an event.
     index("event_seats_event_status_idx").on(t.eventId, t.status),
+    // Finding a hold's seats, and what Postgres scans when a hold is deleted.
+    index("event_seats_hold_id_idx").on(t.holdId),
     check("event_seats_price_positive", sql`${t.priceCents} > 0`),
   ],
 );
@@ -150,8 +157,36 @@ export const users = pgTable(
   ]
 );
 
+/**
+ * A person's claim on some seats for a few minutes while they check out. The seats point
+ * here through event_seats.hold_id. A hold whose expires_at has passed counts as no hold.
+ */
+export const holds = pgTable(
+  "holds",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    // No default: holdSeats sets it from the database clock (now() + the hold length),
+    // so every server agrees on when a hold ends, and the length can differ per
+    // environment (30 seconds in development for milestone 11).
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // "Does this person already have a hold on this event?" (one active hold each).
+    index("holds_user_event_idx").on(t.userId, t.eventId),
+    check("holds_expires_after_created", sql`${t.expiresAt} > ${t.createdAt}`),
+  ],
+);
+
 export type VenueRow = typeof venues.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type EventStatus = (typeof eventStatus.enumValues)[number];
 export type EventSeatStatus = (typeof seatStatus.enumValues)[number];
 export type UserRow = typeof users.$inferSelect;
+export type HoldRow = typeof holds.$inferSelect;
